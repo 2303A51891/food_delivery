@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tomato — Food Delivery Patterns Demo</title>
+  <style>
+    :root{
+      --bg:#fafafa; --card:#fff; --accent:#ff3b30; --muted:#7a7a85; --shadow: 0 8px 30px rgba(20,20,40,0.06);
+      --radius:12px; --glass: rgba(255,255,255,0.6);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
+      background: linear-gradient(180deg,#fff 0%,var(--bg) 100%); color:#111;
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    }
+    .app { max-width:1200px;margin:28px auto;padding:20px; display:grid;grid-template-columns: 1fr 380px;gap:18px; }
+    .left { display:flex;flex-direction:column;gap:14px; }
+    header.appbar{ display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;background:var(--card);box-shadow:var(--shadow);}
+    header.appbar h1{margin:0;font-size:20px}
+    .filters{display:flex;gap:8px;align-items:center}
+    .search {flex:1;padding:10px;border-radius:10px;border:1px solid #eee}
+    .chip{background:#fff;padding:8px 12px;border-radius:999px;border:1px solid #eee;font-size:13px;cursor:pointer}
+    .restaurants {display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+    .rest-card{ background:var(--card);border-radius:12px;overflow:hidden;box-shadow:var(--shadow); display:flex;flex-direction:column; }
+    .rest-media{height:140px;background-size:cover;background-position:center}
+    .rest-body{padding:12px;display:flex;flex-direction:column;gap:8px}
+    .rest-title{display:flex;justify-content:space-between;align-items:center}
+    .rest-title h3{margin:0;font-size:16px}
+    .meta{font-size:13px;color:var(--muted)}
+    .menu{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+    .menu button{padding:8px 10px;border-radius:8px;border:1px solid #eee;background:#fafafa;cursor:pointer}
+    .right { position:sticky;top:24px;align-self:start;display:flex;flex-direction:column;gap:12px;}
+    .card{ background:linear-gradient(180deg,var(--card),#fff);border-radius:12px;padding:14px;box-shadow:var(--shadow); }
+    .cart-title{display:flex;justify-content:space-between;align-items:center}
+    .cart-items{max-height:320px;overflow:auto;margin-top:10px;display:flex;flex-direction:column;gap:10px}
+    .item-row{display:flex;justify-content:space-between;gap:8px;align-items:center}
+    .qty{display:inline-flex;align-items:center;border-radius:8px;background:#f5f5f7;padding:4px 6px;font-size:13px}
+    .total-row{display:flex;justify-content:space-between;margin-top:10px;font-weight:700}
+    .controls{display:flex;gap:8px;margin-top:12px}
+    .btn{flex:1;padding:12px;border-radius:10px;border:0;cursor:pointer;font-weight:600}
+    .btn.primary{background:var(--accent);color:#fff}
+    .btn.ghost{background:transparent;border:1px solid #eee}
+    .btn.warn{background:#ff7043;color:#fff}
+    .agents-list{display:flex;flex-direction:column;gap:8px}
+    .agent{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;background:#fbfbfd;border:1px solid #f0f0f5}
+    .notify{padding:10px;border-radius:10px;background:linear-gradient(90deg,#fff5f5,#fff);border-left:4px solid var(--accent);font-size:13px;color:#4a4a4a}
+    .muted{color:var(--muted);font-size:13px}
+    .rating{background:#fff;padding:6px;border-radius:8px;border:1px solid #eee;font-size:13px}
+    @media (max-width:980px){ .app{grid-template-columns:1fr; padding:12px} .right{position:relative;top:auto} }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="left">
+    <header class="appbar">
+      <div style="width:60px;height:60px;border-radius:2px;background:linear-gradient(45deg,#fbfafa,hsl(0, 0%, 100%));display:flex;align-items:center;justify-content:center;overflow:hidden;">
+       <img src="https://media.istockphoto.com/id/1189117605/vector/vector-illustration-of-a-funny-tomato-in-cartoon-style.jpg?s=612x612&w=0&k=20&c=SnM3QIVMISv-LezrAIFUiJnkBfx8YGEod8e4zr0a6QY="alt="Tomato" style="width:35px; height:35px; object-fit:cover;">
+      </div>
+      <div style="flex:1">
+        <h1 style="font-family: 'Arial Black', Arial, sans-serif; color: #ff3b30; font-weight: 400; letter-spacing: 2px; text-transform: uppercase; font-size: 35px; margin: 0;">TOMATO</h1>
+
+        <div class="muted">Mock demo — Observer · Strategy · Command patterns</div>
+      </div>
+      <div style="text-align:right">
+        <div class="muted">Hello, Guest</div>
+        <div class="muted" id="cartCount">Cart: 0 items</div>
+      </div>
+    </header>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:8px">
+        <input id="search" class="search" placeholder="Search restaurants or dishes..." />
+        <div class="chip" id="filterVeg">Veg</div>
+        <div class="chip" id="filterOpen">Open Now</div>
+      </div>
+    </div>
+
+    <div class="restaurants" id="restaurantsPane"></div>
+  </div>
+
+  <aside class="right">
+    <!-- Cart Card -->
+    <div class="card" id="cartCard">
+      <div class="cart-title">
+        <div>
+          <div style="font-size:16px;font-weight:700">Your Cart</div>
+          <div class="muted" id="cartRestaurant">No restaurant selected</div>
+        </div>
+        <div class="rating" id="cartFeePreview">Fee: ₹0</div>
+      </div>
+
+      <div class="cart-items" id="cartItems"></div>
+
+      <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+        <select id="deliveryStrategy" style="flex:1;padding:10px;border-radius:8px;border:1px solid #eee">
+          <option value="standard">Standard Delivery</option>
+          <option value="express">Express Delivery (+ faster)</option>
+          <option value="coupon">Free-delivery Coupon</option>
+        </select>
+        <div class="muted" style="font-size:13px">Est. fee: <span id="feePreview">₹0</span></div>
+      </div>
+
+      <div class="total-row">
+        <div class="muted">Subtotal</div>
+        <div id="subtotal">₹0</div>
+      </div>
+      <div class="total-row" style="font-size:15px">
+        <div>Total (incl. fee)</div>
+        <div id="grandTotal">₹0</div>
+      </div>
+
+      <div class="controls">
+        <button class="btn primary" id="placeOrderBtn">Place order</button>
+        <button class="btn ghost" id="cancelOrderBtn">Cancel</button>
+      </div>
+
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button class="btn" id="trackOrderBtn" style="background:#f4f4f6">Track</button>
+        <div class="muted" id="currentStatus">No active order</div>
+      </div>
+    </div>
+
+    <!-- Delivery Agents Card -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-weight:700">Delivery Agents</div>
+        <div class="muted small">Observers</div>
+      </div>
+
+      <div class="agents-list" id="agentsPane" style="margin-top:10px"></div>
+
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input id="newAgentName" placeholder="Agent name" style="flex:1;padding:8px;border-radius:8px;border:1px solid #eee" />
+        <button class="btn" id="addAgentBtn">Add</button>
+      </div>
+
+      <div style="margin-top:10px" id="agentNotifArea"></div>
+    </div>
+
+    <!-- Payment Card -->
+    <div class="card" id="paymentCard" style="display:none">
+      <div style="font-weight:700;margin-bottom:10px">Payment</div>
+      <div style="margin-bottom:8px">
+        <label>Customer Name</label>
+        <input id="paymentCustomer" placeholder="Your name" style="width:100%;padding:8px;border-radius:8px;border:1px solid #eee"/>
+      </div>
+      <div style="margin-bottom:8px">
+        <label>Payment Method</label>
+        <select id="paymentMethodSelect" style="width:100%;padding:8px;border-radius:8px;border:1px solid #eee">
+          <option value="cod">Cash on Delivery</option>
+          <option value="card">Credit/Debit Card</option>
+          <option value="phonepe">PhonePe (QR)</option>
+          <option value="gpay">GPay (QR)</option>
+        </select>
+      </div>
+      <div id="qrBox" style="width:200px;height:200px;border:2px dashed #ff3b30;display:flex;justify-content:center;align-items:center;margin:10px auto;display:none">
+        Scan QR here
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn primary" id="payNowBtn" style="flex:1">Pay Now</button>
+        <button class="btn ghost" id="backToCartBtn" style="flex:1">Back to Cart</button>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+  const el = id => document.getElementById(id);
+  const formatR = v => '₹'+v;
+  const now = () => new Date().toLocaleTimeString();
+  function notifyUI(msg,tone='info'){ const area=el('agentNotifArea'); const div=document.createElement('div'); div.className='notify'; div.textContent=`${now()} — ${msg}`; area.prepend(div); while(area.children.length>6) area.removeChild(area.lastChild); }
+
+  // Observer Pattern
+  class Restaurant{constructor(id,name,image,rating,open=true){this.id=id;this.name=name;this.image=image;this.rating=rating;this.open=open;this.observers=[];this.menu=[];} subscribe(agent){if(!this.observers.includes(agent)) this.observers.push(agent);} unsubscribe(agent){this.observers=this.observers.filter(a=>a!==agent);} notify(order){this.observers.forEach(a=>a.update(this,order));}}
+  class DeliveryAgent{constructor(name){this.name=name;this.log=[];this.available=true;} update(restaurant,order){const note=`${this.name} notified: Order ${order.id} at ${restaurant.name}`; this.log.push(note); notifyUI(note); renderAgents();}}
+
+  // Strategy Pattern
+  class DeliveryStrategy{calculate(order){throw new Error('Implement');}}
+  class StandardStrategy extends DeliveryStrategy{calculate(order){return 30+(order.items.length*5);}}
+  class ExpressStrategy extends DeliveryStrategy{calculate(order){return 60+(order.items.length*8);}}
+  class CouponStrategy extends DeliveryStrategy{calculate(order){return 0;}}
+  function getStrategyByKey(k){if(k==='express') return new ExpressStrategy(); if(k==='coupon') return new CouponStrategy(); return new StandardStrategy();}
+
+  // Orders & Commands
+  let ORDER_SEQ=400;
+  class Order{constructor(restaurant,items,strategy){this.id='ZL'+(++ORDER_SEQ);this.restaurant=restaurant;this.items=items;this.strategy=strategy;this.status='created';this.subtotal=items.reduce((s,i)=>s+i.price*i.qty,0);this.fee=strategy.calculate(this);this.total=this.subtotal+this.fee;this.createdAt=new Date();} setStatus(s){this.status=s;}}
+  class ICommand{execute(){}}
+  class PlaceOrderCommand extends ICommand{constructor(controller,restaurantId){super();this.controller=controller;this.restaurantId=restaurantId;} execute(){return this.controller.placeOrder(this.restaurantId);}}
+  class CancelOrderCommand extends ICommand{constructor(controller,orderId){super();this.controller=controller;this.orderId=orderId;} execute(){return this.controller.cancelOrder(this.orderId);}}
+  class TrackOrderCommand extends ICommand{constructor(controller,orderId){super();this.controller=controller;this.orderId=orderId;} execute(){return this.controller.trackOrder(this.orderId);}}
+
+  class OrderController{
+    constructor(){this.orders=new Map();this.activeOrder=null;}
+    placeOrder(restaurantId){
+      if(!CART.items.length){alert('Cart is empty'); return null;}
+      if(CART.restaurantId!==restaurantId){alert('Cart contains items from another restaurant'); return null;}
+      const rest=RESTAURANTS.find(r=>r.id===restaurantId);
+      const strategy=getStrategyByKey(el('deliveryStrategy').value);
+      const order=new Order(rest,CART.items.map(i=>({...i})),strategy);
+      this.orders.set(order.id,order); this.activeOrder=order;
+      rest.notify(order);
+      updateOrderUI(order);
+      logActivity(`Placed ${order.id} at ${rest.name} • Total ${formatR(order.total)}`);
+      setTimeout(()=>this._advance(order.id,'prepared'),1200);
+      setTimeout(()=>this._advance(order.id,'out_for_delivery'),3200);
+      setTimeout(()=>this._advance(order.id,'delivered'),7200);
+      return order;
+    }
+    _advance(orderId,newStatus){
+      const ord=this.orders.get(orderId);
+      if(!ord||ord.status==='cancelled') return;
+      ord.setStatus(newStatus); updateOrderUI(ord);
+      logActivity(`Order ${ord.id} status -> ${newStatus}`);
+    }
+    cancelOrder(orderId){
+      const ord=this.orders.get(orderId); if(!ord){logActivity('Cancel failed: order not found'); return false;}
+      if(ord.status==='delivered'){logActivity('Cancel failed: already delivered'); return false;}
+      ord.setStatus('cancelled'); updateOrderUI(ord); logActivity(`Order ${ord.id} cancelled`); return true;
+    }
+    trackOrder(orderId){const ord=this.orders.get(orderId); if(!ord){logActivity('Track failed: order not found'); return null;} logActivity(`Track: Order ${ord.id} is ${ord.status}`); return ord;}
+  }
+
+  // Sample data
+  const RESTAURANTS=[
+    new Restaurant('r1','Pasta Point','https://images.unsplash.com/photo-1604908177522-3d6b2e5dc2a9?w=1200&q=60','4.4'),
+    new Restaurant('r2','Samosa Express','https://images.unsplash.com/photo-1604908812945-63f7fd7f7b6a?w=1200&q=60','4.2'),
+    new Restaurant('r3','Curry & Co','https://images.unsplash.com/photo-1543353071-087092ec393a?w=1200&q=60','4.6'),
+    new Restaurant('r4','Burger Hub','https://images.unsplash.com/photo-1550547660-d9450f859349?w=1200&q=60','4.1'),
+  ];
+  RESTAURANTS[0].menu=[{id:'m1',name:'Spaghetti Alfredo',price:180},{id:'m2',name:'Penne Arrabiata',price:160},{id:'m3',name:'Garlic Bread',price:60}];
+  RESTAURANTS[1].menu=[{id:'m4',name:'Samosa (2 pcs)',price:40},{id:'m5',name:'Chai',price:25}];
+  RESTAURANTS[2].menu=[{id:'m6',name:'Butter Chicken',price:260},{id:'m7',name:'Naan',price:25}];
+  RESTAURANTS[3].menu=[{id:'m8',name:'Classic Burger',price:220},{id:'m9',name:'Fries',price:90}];
+  const AGENTS=[new DeliveryAgent('Ravi'),new DeliveryAgent('Asha')];
+  RESTAURANTS.forEach(r=>AGENTS.forEach(a=>r.subscribe(a)));
+  const CART={restaurantId:null,items:[]};
+  const controller=new OrderController();
+
+  // Render functions
+  function renderRestaurants(filter=''){const pane=el('restaurantsPane');pane.innerHTML='';const q=filter.trim().toLowerCase();RESTAURANTS.forEach(r=>{if(q&&!r.name.toLowerCase().includes(q)&&!r.menu.some(m=>m.name.toLowerCase().includes(q))) return;const card=document.createElement('div');card.className='rest-card';card.innerHTML=`<div class="rest-media" style="background-image:url('${r.image}');"></div><div class="rest-body"><div class="rest-title"><h3>${r.name}</h3><div class="rating">${r.rating} ★</div></div><div class="meta">${r.open?'Opens now':'Closed'}</div><div class="menu"></div></div>`;const menuDiv=card.querySelector('.menu');r.menu.forEach(mi=>{const btn=document.createElement('button');btn.textContent=`${mi.name} • ${formatR(mi.price)}`;btn.onclick=()=>{if(CART.restaurantId&&CART.restaurantId!==r.id){alert('Clear cart first');return;} CART.restaurantId=r.id;const exist=CART.items.find(i=>i.id===mi.id);if(exist){exist.qty++;}else{CART.items.push({id:mi.id,name:mi.name,price:mi.price,qty:1});} renderCart();};menuDiv.appendChild(btn);});pane.appendChild(card);});}
+  function renderCart(){el('cartItems').innerHTML='';let sub=0;CART.items.forEach(it=>{const row=document.createElement('div');row.className='item-row';row.innerHTML=`<div>${it.name}</div><div class="qty"><button>-</button> ${it.qty} <button>+</button></div><div>${formatR(it.price*it.qty)}</div>`;row.querySelectorAll('button')[0].onclick=()=>{it.qty--; if(it.qty<=0) CART.items=CART.items.filter(x=>x.id!==it.id); renderCart();};row.querySelectorAll('button')[1].onclick=()=>{it.qty++; renderCart();};el('cartItems').appendChild(row); sub+=it.price*it.qty; });el('subtotal').textContent=formatR(sub);const strategy=getStrategyByKey(el('deliveryStrategy').value);const fee=strategy.calculate({items:CART.items});el('feePreview').textContent=formatR(fee);el('cartFeePreview').textContent=formatR(fee);el('grandTotal').textContent=formatR(sub+fee);el('cartRestaurant').textContent=CART.restaurantId?RESTAURANTS.find(r=>r.id===CART.restaurantId).name:'No restaurant selected';el('cartCount').textContent=`Cart: ${CART.items.reduce((s,i)=>s+i.qty,0)} items`;}
+
+  function renderAgents(){const pane=el('agentsPane');pane.innerHTML='';AGENTS.forEach(a=>{const div=document.createElement('div');div.className='agent';div.innerHTML=`<div>${a.name}</div><div>${a.available?'✅':'❌'}</div>`; pane.appendChild(div);});}
+
+  function updateOrderUI(order){el('currentStatus').textContent=order.status; renderCart();}
+  function logActivity(msg){notifyUI(msg);}
+
+  // Events
+  el('search').addEventListener('input',e=>renderRestaurants(e.target.value));
+  el('filterVeg').addEventListener('click',()=>alert('Veg filter clicked (demo)'));
+  el('filterOpen').addEventListener('click',()=>alert('Open filter clicked (demo)'));
+
+  el('placeOrderBtn').addEventListener('click',()=>{
+    el('paymentCard').style.display='block';
+    Array.from(document.querySelectorAll('.card')).forEach(c=>{if(c.id!=='paymentCard') c.style.display='none';});
+  });
+  el('cancelOrderBtn').addEventListener('click',()=>{controller.cancelOrder(controller.activeOrder?.id||''); CART.items=[]; CART.restaurantId=null; renderCart();});
+  el('trackOrderBtn').addEventListener('click',()=>{controller.trackOrder(controller.activeOrder?.id||'');});
+
+  el('addAgentBtn').addEventListener('click',()=>{const n=el('newAgentName').value.trim(); if(n){const a=new DeliveryAgent(n);AGENTS.push(a);RESTAURANTS.forEach(r=>r.subscribe(a));renderAgents();el('newAgentName').value='';}});
+
+  // Payment Card logic
+  el('paymentMethodSelect').addEventListener('change',()=>{
+    const val=el('paymentMethodSelect').value;
+    el('qrBox').style.display=(val==='phonepe'||val==='gpay')?'flex':'none';
+  });
+  el('backToCartBtn').addEventListener('click',()=>{
+    el('paymentCard').style.display='none';
+    Array.from(document.querySelectorAll('.card')).forEach(c=>{if(c.id==='cartCard') c.style.display='block';});
+  });
+  el('payNowBtn').addEventListener('click',()=>{
+    if(!CART.items.length){alert('Cart is empty'); return;}
+    const customer=el('paymentCustomer').value||'Guest';
+    const method=el('paymentMethodSelect').value;
+    const rest=RESTAURANTS.find(r=>r.id===CART.restaurantId);
+    const strategy=getStrategyByKey(el('deliveryStrategy').value);
+    const order=new Order(rest,CART.items.map(i=>({...i})),strategy);
+    order.customerName=customer; order.paymentMethod=method;
+    controller.orders.set(order.id,order); controller.activeOrder=order;
+    rest.notify(order);
+    updateOrderUI(order);
+    logActivity(`Order ${order.id} placed by ${customer} via ${method} • Total ${formatR(order.total)}`);
+    CART.items=[]; CART.restaurantId=null; renderCart();
+    el('paymentCard').style.display='none';
+    Array.from(document.querySelectorAll('.card')).forEach(c=>{if(c.id==='cartCard') c.style.display='block';});
+  });
+
+  // Init
+  renderRestaurants();
+  renderCart();
+  renderAgents();
+</script>
+</body>
+</html>
